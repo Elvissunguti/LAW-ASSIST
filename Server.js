@@ -7,13 +7,14 @@ const session = require('express-session');
 const mongoose = require('mongoose');
 const User = require('./src/Backend/Model/User');
 const cors = require("cors");
+const config = require('./src/Backend/Config/Config');
 
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
 
-mongoose.connect("mongodb://law-assist:law-assist@ac-yxjvrfo-shard-00-00.8mjrhtp.mongodb.net:27017,ac-yxjvrfo-shard-00-01.8mjrhtp.mongodb.net:27017,ac-yxjvrfo-shard-00-02.8mjrhtp.mongodb.net:27017/law-assist?ssl=true&replicaSet=atlas-3jsn19-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0", 
+mongoose.connect(config.mongodbURI, 
 { useNewUrlParser: true, useUnifiedTopology: true })
 .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('Error connecting to MongoDB:', err));
@@ -26,8 +27,8 @@ app.use(passport.session());
 
 // Configure Passport with Google OAuth 2.0
 passport.use(new GoogleStrategy({
-    clientID: '564534086504-ppbqpto6i6n4fc5c23mjgqaachrbqdm5.apps.googleusercontent.com',
-    clientSecret: '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',
+    clientID: config.google.clientID,
+    clientSecret: config.google.clientSecret,
     callbackURL: '/auth/google/callback'
   },
   (accessToken, refreshToken, profile, done) => {
