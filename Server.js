@@ -27,41 +27,48 @@ app.use(passport.session());
 
 // Configure Passport with Google OAuth 2.0
 passport.use(new GoogleStrategy({
-    clientID: config.google.clientID,
-    clientSecret: config.google.clientSecret,
-    callbackURL: '/auth/google/callback'
-  },
-  (accessToken, refreshToken, profile, done) => {
-    User.findOne({ googleId: profile.id }, (err, user) => {
-      if (err) return done(err);
-      if (user) {
-        // User already exists, return user
-        return done(null, user);
-      } else {
-        // Create new user
-        const newUser = new User({
-          googleId: profile.id,
-          displayName: profile.displayName,
-          chatHistory: []
-        });
-        newUser.save((err) => {
-          if (err) return done(err);
-          return done(null, newUser);
-        });
-      }
-    });
+  clientID: config.google.clientID,
+  clientSecret: config.google.clientSecret,
+  callbackURL: '/auth/google/callback'
+},
+async (accessToken, refreshToken, profile, done) => {
+  try {
+    let user = await User.findOne({ googleId: profile.id });
+
+    if (user) {
+      // User already exists, return user
+      return done(null, user);
+    } else {
+      // Create new user
+      const newUser = new User({
+        googleId: profile.id,
+        displayName: profile.displayName,
+        chatHistory: []
+      });
+      await newUser.save();
+      return done(null, newUser);
+    }
+  } catch (err) {
+    return done(err);
   }
+}
 ));
+
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
 passport.deserializeUser((id, done) => {
-  User.findById(id, (err, user) => {
-    done(err, user);
-  });
+  User.findById(id)
+    .then(user => {
+      done(null, user);
+    })
+    .catch(err => {
+      done(err);
+    });
 });
+
 
 
 app.get('/auth/google',
@@ -69,15 +76,15 @@ app.get('/auth/google',
    );
 
 app.get('/auth/google/callback',
-       passport.authenticate('google', { failureRedirect: '/' }),
+       passport.authenticate('google', { failureRedirect: 'http://localhost:3000/' }),
        (req, res) => {
            // Redirect after successful authentication
-           res.redirect('/dashboard');
+           res.redirect('http://localhost:3000/home');
        }
    );
 app.get('/logout', (req, res) => {
        req.logout();
-       res.redirect('/');
+       res.redirect('http://localhost:3000/');
    });
 
 
