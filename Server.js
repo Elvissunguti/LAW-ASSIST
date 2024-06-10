@@ -7,7 +7,9 @@ const session = require('express-session');
 const mongoose = require('mongoose');
 const User = require('./src/Backend/Model/User');
 const cors = require("cors");
+const bodyParser = require("body-parser");
 const config = require('./src/Backend/Config/Config');
+const PromptRoutes = require("./src/Backend/Router/Prompt")
 
 
 const app = express();
@@ -20,6 +22,8 @@ mongoose.connect(config.mongodbURI,
   .catch(err => console.error('Error connecting to MongoDB:', err));
 
 app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(session({ secret: 'SECRET_KEY', resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
@@ -29,7 +33,7 @@ app.use(passport.session());
 passport.use(new GoogleStrategy({
   clientID: config.google.clientID,
   clientSecret: config.google.clientSecret,
-  callbackURL: '/auth/google/callback'
+  callbackURL: 'http://localhost:3000/auth/google/callback'
 },
 async (accessToken, refreshToken, profile, done) => {
   try {
@@ -71,23 +75,12 @@ passport.deserializeUser((id, done) => {
 
 
 
-app.get('/auth/google',
-       passport.authenticate('google', { scope: ['profile', 'email'] })
-   );
-
-app.get('/auth/google/callback',
-       passport.authenticate('google', { failureRedirect: 'http://localhost:3000/' }),
-       (req, res) => {
-           // Redirect after successful authentication
-           res.redirect('http://localhost:3000/home');
-       }
-   );
 app.get('/logout', (req, res) => {
        req.logout();
        res.redirect('http://localhost:3000/');
    });
 
-
+app.use("/prompt", PromptRoutes)
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
